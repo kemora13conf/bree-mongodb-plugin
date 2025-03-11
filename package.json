@@ -1,0 +1,38 @@
+{
+  "name": "bree-mongodb-plugin",
+  "version": "1.0.0",
+  "description": "MongoDB persistence plugin for Bree.js",
+  "main": "dist/index.js",
+  "repository": "https://github.com/kemora13conf/bree-mongodb-plugin.git",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "yarn run build"
+  },
+  "keywords": [
+    "bree",
+    "mongodb",
+    "mongoose",
+    "persistence",
+    "plugin",
+    "scheduler",
+    "jobs"
+  ],
+  "author": "Mr.kemora13.conf <Abdelghanielmouak@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "bree": "^9.2.4",
+    "mongodb": "^6.14.2",
+    "mongoose": "^8.12.1",
+    "pino": "^9.6.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.10",
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.1.4",
+    "ts-jest": "^29.2.6",
+    "typescript": "^5.8.2"
+  }
+}
