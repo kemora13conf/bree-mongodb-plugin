@@ -1,97 +1,106 @@
 import Bree from 'bree';
-import { MongoDBPluginOptions, JobDocument, BreeWithEvents } from './types';
-import { createDatabaseConnection } from './database';
+import { MongoDBPluginOptions } from './types';
+import { createDatabaseConnection } from './config/database';
 import { JobRepository } from './jobRepository';
 import { log } from './utils';
 
+
 export default async function MongoDBPersistence(
-    bree: BreeWithEvents,
     options: MongoDBPluginOptions,
+    bree: typeof Bree,
 ) {
     const dbConnection = await createDatabaseConnection(options);
     const jobRepository = new JobRepository(dbConnection);
 
+    // --- Store original Bree methods ---
+    const originalAdd = bree.prototype.add.bind(bree); // Important to bind to the correct context
+    const originalRemove = bree.prototype.remove.bind(bree);
+    const originalStart = bree.prototype.start.bind(bree);
+    const originalStop = bree.prototype.stop.bind(bree);
+    const originalRun = bree.prototype.run.bind(bree);
 
+    // --- Override Bree methods ---
+    bree.prototype.add = async (jobs: | string
+        | (() => void)
+        | Bree.JobOptions
+        | Array<string | (() => void) | Bree.JobOptions>) => {
+            console.log('jobs', jobs);
+        switch (typeof jobs) {
+            case 'string':
+                await jobRepository.createJob({ name: jobs });
+                break;
+            case 'object':
+                const jobArray = Array.isArray(jobs) ? jobs : [jobs];
 
-    //Load all jobs from database to bree
-    const jobs = await jobRepository.getAllJobs();
-
-    // Initialize jobs in Bree from the database
-    for (const job of jobs) {
-        try {
-            const jobOptions: Bree.JobOptions = {
-                name: job.name,
-                path: job.path,
-                timeout: job.timeout,
-                worker: job.worker,
-                date: job.date,
-            };
-            // Check if schedule is defined before assigning
-            if (job.schedule) {
-                jobOptions.interval = job.schedule;
-            }
-            // Check if the job already exists in Bree
-            const existingJob = bree.config.jobs.find(j => j.name === job.name);
-
-            // If the job does not exist, add it
-            if (!existingJob) {
-                bree.add(jobOptions);
-            }
-
-        } catch (err) {
-            log(`Error initializing job ${job.name} from database:`, err);
+                for (const job of jobArray) {
+                    if (typeof job === 'string') {
+                        await jobRepository.createJob({ name: job });
+                    } else {
+                        await jobRepository.createJob(job);
+                    }
+                }
+                break;
+            default:
+                break;
         }
-    }
+        return originalAdd(jobs); // Call original Bree method
+    };
 
-    bree.on('job created', async (jobOptions: Bree.JobOptions) => {
-        log(`Job created: ${jobOptions.name}`);
-        try {
-            await jobRepository.createJob(jobOptions);
-        } catch (error) {
-            log("Error creating job:", error);
+    bree.prototype.remove = async (name?: string) => {
+        if (name) {
+            await jobRepository.deleteJob(name);
         }
+        return originalRemove(name);
+    };
 
-    });
-
-    bree.on('job started', async (name: string) => {
-        log(`Job started: ${name}`);
-        try {
+    bree.prototype.start = async (name?: string) => {
+        console.log('name', name);
+        if (name) {
             await jobRepository.updateJob(name, { status: 'running', lastRun: new Date() });
-        } catch (error) {
-            log("Error starting job:", error)
         }
-    });
+        return originalStart(name);
+    };
 
-    bree.on('job completed', async (name: string) => {
-        log(`Job completed: ${name}`);
-        await jobRepository.updateJob(name, { status: 'completed' });
-    });
+    bree.prototype.stop = async (name?: string) => {
+        if (name) {
+            await jobRepository.updateJob(name, { status: 'stopped' }); //Update the status
+        }
+        return originalStop(name);
+    };
 
-    bree.on('job failed', async (name: string, err: Error) => {
-        log(`Job failed: ${name}`, err);
-        await jobRepository.updateJob(name, { status: 'failed', error: err });
-    });
-    bree.on('job cancelled', async (name: string) => {
-        log(`Job cancelled: ${name}`);
-        await jobRepository.updateJob(name, { status: 'cancelled' });
-    });
-    bree.on('job deleted', async (name: string) => {
-        log(`Job deleted: ${name}`);
-        await jobRepository.deleteJob(name);
-    });
+    bree.prototype.run = async (name?: string) => {
+        if (name) {
+            await jobRepository.updateJob(name, { status: 'running', lastRun: new Date() });
+        }
+        return originalRun(name);
+    };
 
-    // Graceful shutdown:  Ensure database connection is closed.
-    // Bree doesn't have a built-in shutdown event, so you'll need to handle
-    // this in your application's main shutdown logic.  For example:
-    // process.on('SIGTERM', async () => {
-    //   await dbConnection.disconnect();
-    //   process.exit(0);
-    // });
-    // process.on('SIGINT', async () => {
-    //   await dbConnection.disconnect();
-    //   process.exit(0);
-    // });
-    // YOU MUST HANDLE THE DISCONNECTION ON YOUR APP LEVEL
 
-    log('MongoDB persistence plugin loaded');
+    // --- Load Jobs at Startup ---
+    // const jobs = await jobRepository.getAllJobs();
+    // for (const job of jobs) {
+    //     try {
+    //         const jobOptions: Bree.JobOptions = {
+    //             name: job.name,
+    //             path: job.path,
+    //             timeout: job.timeout,
+    //             worker: job.worker,
+    //             date: job.date,
+    //         };
+    //         if (job.schedule) {
+    //             jobOptions.interval = job.schedule;
+    //         }
+    //         // Use originalAdd to avoid infinite recursion and ensure correct initialization
+    //         const existingJob = bree.prototype.config.jobs.find((j: any) => j.name === job.name);
+
+    //         // If the job does not exist, add it
+    //         if (!existingJob) {
+    //             originalAdd(jobOptions);
+    //         }
+    //     } catch (err) {
+    //         log(`Error initializing job ${job.name} from database:`, err);
+    //     }
+    // }
+
+    log('MongoDB persistence plugin loaded with method overrides');
 }

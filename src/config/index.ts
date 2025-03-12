@@ -1,4 +1,4 @@
-import { MongoDBPluginOptions } from './types';
+import { MongoDBPluginOptions } from '../types';
 
 const DEFAULT_COLLECTION_NAME = 'bree_jobs';
 

@@ -1,2 +1,3 @@
-import { MongoDBPluginOptions, BreeWithEvents } from './types';
-export default function MongoDBPersistence(bree: BreeWithEvents, options: MongoDBPluginOptions): Promise<void>;
+import Bree from 'bree';
+import { MongoDBPluginOptions } from './types';
+export default function MongoDBPersistence(options: MongoDBPluginOptions, bree: typeof Bree): Promise<void>;

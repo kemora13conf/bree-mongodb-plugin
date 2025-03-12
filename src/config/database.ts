@@ -1,7 +1,7 @@
 import { MongoClient, Db } from 'mongodb';
 import { Connection, Mongoose, Schema, model } from 'mongoose';
-import { IDatabaseConnection, JobDocument, JobDocumentModel, MongoDBPluginOptions } from './types';
-import { validateAndNormalizeConfig } from './config';
+import { IDatabaseConnection, JobDocument, JobDocumentModel, MongoDBPluginOptions } from '../types';
+import { validateAndNormalizeConfig } from '.';
 
 // Mongoose implementation
 class MongooseDatabaseConnection implements IDatabaseConnection {
@@ -27,7 +27,7 @@ class MongooseDatabaseConnection implements IDatabaseConnection {
             timeout: { type: Schema.Types.Mixed },
             worker: { type: Schema.Types.Mixed },
             date: { type: Date }
-        }, { timestamps: true });
+        }, { timestamps: true, collection: this.collectionName });
 
         // Ensure the model is only created once
         try {

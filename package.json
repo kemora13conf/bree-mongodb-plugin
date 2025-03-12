@@ -6,6 +6,8 @@
   "repository": "https://github.com/kemora13conf/bree-mongodb-plugin.git",
   "scripts": {
     "build": "tsc",
+    "dev": "tsc -w",
+    "example": "ts-node examples/index.ts",
     "test": "jest",
     "prepublishOnly": "yarn run build"
   },
@@ -25,7 +27,9 @@
     "bree": "^9.2.4",
     "mongodb": "^6.14.2",
     "mongoose": "^8.12.1",
-    "pino": "^9.6.0"
+    "pino": "^9.6.0",
+    "safe-timers": "^1.1.0",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
