@@ -6,10 +6,11 @@ import { log } from './utils';
 
 export default async function MongoDBPersistence(
     bree: BreeWithEvents,
-    options: MongoDBPluginOptions
+    options: MongoDBPluginOptions,
 ) {
     const dbConnection = await createDatabaseConnection(options);
     const jobRepository = new JobRepository(dbConnection);
+
 
 
     //Load all jobs from database to bree

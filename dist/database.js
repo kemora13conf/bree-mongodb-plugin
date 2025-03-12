@@ -25,6 +25,8 @@ class MongooseDatabaseConnection {
         // Ensure the model is only created once
         try {
             this.JobModel = this.connection.model('Job', jobSchema);
+            // Make sure the collection is created if it doesn't exist
+            this.connection.createCollection(this.collectionName);
         }
         catch (error) {
             // If the model has already been compiled, re-throw any other error
